@@ -5,7 +5,7 @@ do
     START=$(date +%s)
 
     echo "generate fractal and convert to SVG"
-    ~/ifs/ifs | ~/ifs/points2svg > ./ifs.svg
+    ./ifs | ./points2svg > ifs.svg
 
     while [ 0 -ne $(ps -e | grep -c 'mogrify') ]
     do
@@ -14,16 +14,16 @@ do
     done
     
     echo "convert image format"
-    mogrify -format png ./ifs.svg
+    mogrify -format png ifs.svg
 
     echo "resize, normalize, and flip"
     FILENAME="ifs""$(date +%s)"".png"
-    convert -resize 1400x1400 -normalize -flip ./ifs.png "$FILENAME"
+    convert -resize 1400x1400 -normalize -flip ifs.png "$FILENAME"
     display "$FILENAME" &
 
     echo "housekeeping"
-    rm ./ifs.svg
-    rm ./ifs.png
+    rm ifs.svg
+    rm ifs.png
 
     END=$(date +%s)
     DIFF=$(echo "$END - $START" | bc)
