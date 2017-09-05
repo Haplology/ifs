@@ -60,8 +60,10 @@ int main() {
   
   for (row = 0; row < 2000; row = row + 1) {
     for (column = 0; column < 2000; column = column + 1) {
-      printf("    <circle cx=\"%d\" cy=\"%d\" r=\"0.5\" fill=\"rgb(%d, %d, %d)\" fill-opacity=\"0.5\" />", column, row, pixelrgb[column][row][0], pixelrgb[column][row][1], pixelrgb[column][row][2]);
-      printf("\n");
+      if ((pixelrgb[column][row][0]+pixelrgb[column][row][1]+pixelrgb[column][row][2]) > 0) {
+	printf("    <circle cx=\"%d\" cy=\"%d\" r=\"0.5\" fill=\"rgb(%d, %d, %d)\" fill-opacity=\"0.5\" />", column, row, pixelrgb[column][row][0], pixelrgb[column][row][1], pixelrgb[column][row][2]);
+	printf("\n");
+      }
     }
   }
 
