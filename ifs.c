@@ -5,7 +5,7 @@
 
 #define ITERATIONS 12
 #define SIZE 2000
-#define MAX_TRANSFORMATIONS 7 
+#define MAX_TRANSFORMATIONS 4
 #define COLOR_DECAY 1.0
 
 static double rotate[MAX_TRANSFORMATIONS]; 
