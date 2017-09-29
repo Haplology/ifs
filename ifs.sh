@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# compile if necessary
+if [ ! -e ifs ]
+then
+    echo "compiling ifs"
+    gcc -Wall ifs.c -o ifs -lm
+fi
+
+if [ ! -e points2svg ]
+then
+    echo "compiling points2svg"
+    gcc -Wall points2svg.c -o points2svg -lm
+fi
+
 while true
 do
     START=$(date +%s)
@@ -19,7 +32,7 @@ do
     echo "resize, normalize, and flip"
     FILENAME="ifs""$(date +%s)"".png"
     convert -resize 1400x1400 -normalize -flip ifs.png "$FILENAME"
-    display "$FILENAME" &
+    # display "$FILENAME" &
 
     echo "housekeeping"
     rm ifs.svg
