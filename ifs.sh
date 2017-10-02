@@ -4,32 +4,29 @@
 if [ ! -e ifs ]
 then
     echo "compiling ifs"
-    gcc -Wall ifs.c -o ifs -lm
-fi
-
-if [ ! -e points2svg ]
-then
-    echo "compiling points2svg"
-    gcc -Wall points2svg.c -o points2svg -lm
+    gcc -Wall ~/ifs/ifs.c -o ifs -lm
 fi
 
 while true
 do
-    START=$(date +%s)
+    # get a unique filename within ifs directory (minus extension)
+    FILENAME="ifs""$(date +%s)"
+    while [ 0 -ne $(find ~/ifs | grep -c "$FILENAME" ) ]
+    do
+	sleep $(expr "$RANDOM" % 10)
+	FILENAME="ifs""$(date +%s)"
+    done
+    echo "using as filename: $FILENAME"
 
     echo "generate fractal and convert to SVG"
-    ./ifs | ./points2svg > ifs.svg
+    SVG="$FILENAME"".svg"
+    ./ifs > "$SVG"
 
     echo "convert to PNG, resize, normalize, and flip"
-    FILENAME="ifs""$(date +%s)"".png"
-    convert -format png -resize 1400x1400 -normalize -flip ifs.svg "$FILENAME"
-    # display "$FILENAME" &
+    PNG="$FILENAME"".png"
+    convert -format png -resize 1400x1400 -normalize -flip "$SVG" "$PNG"
+    rm "$SVG"
 
-    END=$(date +%s)
-    DIFF=$(echo "$END - $START" | bc)
-    echo "time elapsed:"
-    echo $DIFF
-
-    echo "wait a minute"
-    sleep 60
+    echo "pause"
+    sleep 5
 done
