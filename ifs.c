@@ -197,7 +197,7 @@ int main() {
       red = pixelrgb[RESOLUTION*3*x + 3*y + 0];
       green = pixelrgb[RESOLUTION*3*x + 3*y + 1];
       blue = pixelrgb[RESOLUTION*3*x + 3*y + 2];
-      if ((red != 0) || (green != 0) || (red != 0)) {
+      if ((red != 0) || (green != 0) || (blue != 0)) {
 	printf("    <circle cx=\"%d\" cy=\"%d\" r=\"0.4\" fill=\"rgb(%d, %d, %d)\" />\n",
 	       x, y,
 	       red, green, blue);
