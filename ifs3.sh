@@ -6,36 +6,30 @@ do
     
     # transformation 1
     ROTATE1=$(echo "$(($RANDOM%1000))*2.0*3.14159/1000.0" | bc -l)
-    XSCALE1=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-    YSCALE1=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-
-    XSHIFT1=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-    YSHIFT1=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-
+    XSCALE1=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    YSCALE1=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    XSHIFT1=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    YSHIFT1=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
     RED1=$(($RANDOM%256))
     GREEN1=$(($RANDOM%256))
     BLUE1=$(($RANDOM%256))
 
     # transformation 2 
     ROTATE2=$(echo "$(($RANDOM%1000))*2.0*3.14159/1000.0" | bc -l)
-    XSCALE2=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-    YSCALE2=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-
-    XSHIFT2=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-    YSHIFT2=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-
+    XSCALE2=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    YSCALE2=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    XSHIFT2=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    YSHIFT2=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
     RED2=$(($RANDOM%256))
     GREEN2=$(($RANDOM%256))
     BLUE2=$(($RANDOM%256))
 
     # transformation 3
     ROTATE3=$(echo "$(($RANDOM%1000))*2.0*3.14159/1000.0" | bc -l)
-    XSCALE3=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-    YSCALE3=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-
-    XSHIFT3=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-    YSHIFT3=$(echo "$(($RANDOM%1000))/1000.0" | bc -l)
-
+    XSCALE3=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    YSCALE3=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    XSHIFT3=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
+    YSHIFT3=$(echo "(2.0*$(($RANDOM%1000))/1000.0) - 1.0" | bc -l)
     RED3=$(($RANDOM%256))
     GREEN3=$(($RANDOM%256))
     BLUE3=$(($RANDOM%256))
@@ -62,7 +56,7 @@ do
     PNG="$FILENAME"".png"
     convert -format png -resize 1400x1400 -normalize -flip "$SVG" "$PNG"
     
-    mv "$SVG" ~/ifs/svg/
+    #mv "$SVG" ~/ifs/svg/
 
     date
     
