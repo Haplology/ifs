@@ -10,7 +10,7 @@ Render an image of a fractal generated with an iterated function system (IFS).
 ### Quickstart
 Let's make a Sierpinski triangle.
 
-1. `gcc -Wall ~/ifs/ifs9.c -o ifs -lm`
+1. `gcc -Wall ~/ifs/ifs.c -o ifs -lm`
 2. `./ifs --rotate1 0 --xscale1 0.5 --yscale1 0.5 --xshift1 0 --yshift1 0 --red1 255 --green1 0 --blue1 0 --rotate2 0 --xscale2 0.5 --yscale2 0.5 --xshift2 0.5 --yshift2 0 --red2 0 --green2 255 --blue2 0 --rotate3 0 --xscale3 0.5 --yscale3 0.5 --xshift3 0.25 --yshift3 0.5 --red3 0 --green3 0 --blue3 255 sierpinski.svg` 
 3. `convert -format png -resize 1400x1400 -normalize -flip sierpinski.svg sierpinski.png`
 
