@@ -4,7 +4,7 @@
 if [ ! -e ifs ]
 then
     echo "compiling ifs"
-    gcc -Wall ~/ifs/ifs9.c -o ifs -lm
+    gcc -Wall ~/ifs/ifs.c -o ifs -lm
 fi
 
 while true
