@@ -11,13 +11,6 @@ cp $0 "$TIMESTAMP"/"$TIMESTAMP"".sh" # copy self to current directory
 cd "$TIMESTAMP"
 pwd
 
-# compile if necessary
-if [ ! -e ifs ]
-then
-    echo "compiling ifs"
-    gcc -Wall ~/ifs/ifs9.c -o ifs -lm
-fi
-
 # 0-1499 : 1507983065.mp4
 FRAMES=1500 
 FIRSTFRAME=1500
