@@ -14,8 +14,7 @@ Let's make a Sierpinski triangle.
 2. `./ifs --rotate1 0 --xscale1 0.5 --yscale1 0.5 --xshift1 0 --yshift1 0 --red1 255 --green1 0 --blue1 0 --rotate2 0 --xscale2 0.5 --yscale2 0.5 --xshift2 0.5 --yshift2 0 --red2 0 --green2 255 --blue2 0 --rotate3 0 --xscale3 0.5 --yscale3 0.5 --xshift3 0.25 --yshift3 0.5 --red3 0 --green3 0 --blue3 255 --iterations 18 > sierpinski.svg` 
 3. `convert -format png -resize 1400x1400 -normalize -flip sierpinski.svg sierpinski.png`
 
-### Scripts 
-ifs3.sh generates fractals from three functions, ifs4.sh from four, and ifs5.sh from five. movie.sh generates an animation made by transitioning from one fractal to another, but before you use that, you need to specify the SVG files that it will use to get the parameters for those two fractals.
+If you don't know what parameters you want to use, you can run `ifs.sh` to generate random parameters and use those to generate fractals in an endless loop.  
 
 ### Parameters
 Rotation is in radians, scale and shift are from 0 to 1, and colors are from 0 to 255.
