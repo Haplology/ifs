@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# compile if necessary
-if [ ! -e ifs ]
-then
-    echo "compiling ifs"
-    gcc -Wall ~/ifs/ifs9.c -o ifs -lm
-fi
-
 while true
 do
     date
