@@ -5,15 +5,22 @@
 #include <unistd.h>
 #include <string.h>
 #include <getopt.h>
+#include "bmp.h"
+
+// gcc -Wall ~/ifs/ifs.c -o ifs -lm
 
 #define STARTPOINT 1000000
-#define RESOLUTION 3100
-#define PADDING 0.01
-#define CUTOFF_INIT 1.0
+// 3840 * 6
+#define XRES 23040
+// 2160 * 6
+#define YRES 12960
 #define FOR_REAL 1
 #define DRY_RUN 0
 // FC stands for full color in rgb
-#define FC 255.0 
+#define FC 255.0
+
+#define WIDTH   23040L
+#define HEIGHT  12960L
 
 static double rotate[10]; 
 static double xscale[10];
@@ -23,29 +30,32 @@ static double yshift[10];
 static int palette_red[10]; 
 static int palette_green[10]; 
 static int palette_blue[10]; 
-static short int pixelrgb[RESOLUTION*RESOLUTION*3] = {0};
+static short int red_layer[XRES*YRES] = {0};
+static short int green_layer[XRES*YRES] = {0};
+static short int blue_layer[XRES*YRES] = {0};
 static int transformations = 3;
 static int iterations = 12;
-// 5^0 + 5^1 + 5^2 + 5^3 + 5^4 + 5^5 + 5^6 + 5^7 + 5^8 + 5^9 + 5^10 + 5^11 + 5^12 + 5^13 = 1525878906
+static int filename = 0;
 
 static double width;
 static double height;
-static double greater;
-static double lesser;
 static double bitmap_xshift;
 static double bitmap_yshift;
+static double stretch;
+static double padding = YRES*0.01;
 
 static double xmin = FLT_MAX;
 static double ymin = FLT_MAX;
 static double xmax = -1.0*FLT_MAX;
 static double ymax = -1.0*FLT_MAX;
 
+
 double xstar(double x, double y, double rotate, double xscale, double xshift);
 double ystar(double x, double y, double rotate, double yscale, double yshift);
-void iterateFS(int iterations_left, double x, double y, double red, double green, double blue, double xcutoff, double ycutoff, int for_real);
+void iterateFS(int iterations_left, double x, double y, double red, double green, double blue, int for_real);
 void adjust_bounds(double x, double y);
 void set_bitmap_adjustments(); 
-void print_svg();
+void set_pixels(char *bmp);
 void init_tr(int argc, char *argv[]);
 
 double xstar(double x, double y, double rotate, double xscale, double xshift) {
@@ -56,21 +66,22 @@ double ystar(double x, double y, double rotate, double yscale, double yshift) {
   return ((y*cos(rotate) + x*sin(rotate))*yscale + yshift);
 }
 
-void iterateFS(int iterations_left, double x, double y, double red, double green, double blue, double xcutoff, double ycutoff, int for_real) {
-  if (iterations_left == 0 || (xcutoff < (0.71 / RESOLUTION) && ycutoff < (0.71 / RESOLUTION)) ) {
+void iterateFS(int iterations_left, double x, double y, double red, double green, double blue, int for_real) {
+  if (iterations_left == 0) {
     /* stop recursion and save in pixel space */
     if ( for_real == DRY_RUN ) {
       // not for real --> dry run, just adjust x and y bounds
       adjust_bounds(x, y);
     } else {
-      // for real, set pixel 
-      int xpixel = (int)((((x-xmin+bitmap_xshift)/greater)*RESOLUTION)*(1.0-PADDING*2.0)+RESOLUTION*PADDING);
-      int ypixel = (int)((((y-ymin+bitmap_yshift)/greater)*RESOLUTION)*(1.0-PADDING*2.0)+RESOLUTION*PADDING);
-      if ( xpixel >= 0 && xpixel <= RESOLUTION && ypixel >= 0 && ypixel <= RESOLUTION ) {
-	pixelrgb[RESOLUTION*3*xpixel + 3*ypixel + 0] = (int)red;
-	pixelrgb[RESOLUTION*3*xpixel + 3*ypixel + 1] = (int)green;
-	pixelrgb[RESOLUTION*3*xpixel + 3*ypixel + 2] = (int)blue;
-	//printf("%d %d\n", xpixel, ypixel);
+      // for real, set pixel
+      //printf("x %lf xmin %lf stretch %lf bitmap_xshift %lf\n", x, xmin, stretch, bitmap_xshift);
+      int xpixel = (int)((x-xmin)*stretch + bitmap_xshift);
+      //printf("y %lf ymin %lf stretch %lf bitmap_yshift %lf\n", y, ymin, stretch, bitmap_yshift);
+      int ypixel = (int)((y-ymin)*stretch + bitmap_yshift);
+      if ( xpixel >= 0 && xpixel <= XRES && ypixel >= 0 && ypixel <= YRES ) {
+	red_layer[XRES*ypixel + xpixel] = (int)red;
+	green_layer[XRES*ypixel + xpixel] = (int)green;
+	blue_layer[XRES*ypixel + xpixel] = (int)blue;
       } else {
 	printf("pixel out of bounds\n");
       }
@@ -85,7 +96,6 @@ void iterateFS(int iterations_left, double x, double y, double red, double green
 		(red + palette_red[i])*0.5,
 		(green + palette_green[i])*0.5,
 		(blue + palette_blue[i])*0.5,
-		xcutoff*fabs(xscale[i]), ycutoff*fabs(yscale[i]), 
 		for_real
 		);
     }
@@ -114,58 +124,32 @@ void adjust_bounds(double x, double y) {
 void set_bitmap_adjustments() {
   width = xmax - xmin;
   height = ymax - ymin;
-  
-  if (width > height) {
-    greater = width;
-    lesser = height;
-    bitmap_xshift = 0.0;
-    bitmap_yshift = (greater - lesser)*0.5;
-  } else {
-    greater = height;
-    lesser = width;
-    bitmap_xshift = (greater - lesser)*0.5;
-    bitmap_yshift = 0.0;
-  }
-  
+
+  // stretch up to width or height, whichever is the lower factor
+  stretch = (XRES/width < YRES/height) ? (XRES/width)*0.98 : (YRES/height)*0.98;
+  // if we stretched to width, no extra padding for x, if stretch to height, extra padding to center x
+  bitmap_xshift = (XRES/width < YRES/height) ? padding : (((XRES - width*stretch)*0.5)+padding);
+  bitmap_yshift = (XRES/width < YRES/height) ? (((YRES - height*stretch)*0.5)+padding) : padding;
+    
   return;
 }
 
-void print_svg() {
+void set_pixels(char *bmp) {
   int x;
   int y;
   short int red;
   short int green;
   short int blue;
-  int i;
-  
-  printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-  printf("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%%\" height=\"100%%\" viewBox=\"0 0 %d %d\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n", RESOLUTION, RESOLUTION);
-  printf("    <rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" fill=\"black\" />\n", RESOLUTION, RESOLUTION);
-  printf("    <desc>\n");
-  for ( i = 0; i < transformations; i++ ) {
-    printf("    rotate\t%lf\txscale\t%lf\tyscale\t%lf\txshift\t%lf\tyshift\t%lf\tred\t%d\tgreen\t%d\tblue\t%d\n", rotate[i], xscale[i], yscale[i], xshift[i], yshift[i], palette_red[i], palette_green[i], palette_blue[i]);
-  }
-  printf("     ./ifs ");
-  for ( i = 0; i < transformations; i++ ) {
-    printf("--rotate%d %lf --xscale%d %lf --yscale%d %lf --xshift%d %lf --yshift%d %lf --red%d %d --green%d %d --blue%d %d ", i+1, rotate[i], i+1, xscale[i], i+1, yscale[i], i+1, xshift[i], i+1, yshift[i], i+1, palette_red[i], i+1, palette_green[i], i+1, palette_blue[i]);
-  }
-  printf("--iterations %d\n", iterations);
-  printf("    </desc>\n");
-  
-  for ( x = 0; x < RESOLUTION; x++ ) {
-    for ( y = 0; y < RESOLUTION; y++ ) {
-      red = pixelrgb[RESOLUTION*3*x + 3*y + 0];
-      green = pixelrgb[RESOLUTION*3*x + 3*y + 1];
-      blue = pixelrgb[RESOLUTION*3*x + 3*y + 2];
-      if (red+green+blue > 0) {
-	printf("    <circle cx=\"%d\" cy=\"%d\" r=\"0.4\" fill=\"rgb(%d, %d, %d)\" />\n",
-	       x, y,
-	       red, green, blue);
-      }
+
+  for ( y = 0; y < YRES; y++ ) {
+    for ( x = 0; x < XRES; x++ ) {
+      red = red_layer[XRES*y + x];
+      green = green_layer[XRES*y + x];
+      blue = blue_layer[XRES*y + x];
+      bmp_set(bmp, x, y, bmp_encode(red, green, blue));
     }
   }
-  printf("\n</svg>\n");
-
+  
   return;
 }
 
@@ -225,12 +209,23 @@ void init_tr(int argc, char *argv[]) {
 
 	  {"iterations", required_argument, 0, 'O'},
 	  
+          {"rotate6",  required_argument, 0, 'P'},
+          {"xscale6",  required_argument, 0, 'Q'},
+          {"yscale6",  required_argument, 0, 'R'},
+          {"xshift6",  required_argument, 0, 'S'},
+          {"yshift6",  required_argument, 0, 'T'},
+          {"red6",  required_argument, 0, 'U'},
+          {"green6",  required_argument, 0, 'V'},
+          {"blue6",  required_argument, 0, 'W'},
+
+	  {"filename", required_argument, 0, 'X'}, 
+	  
           {0, 0, 0, 0}
         };
       /* getopt_long stores the option index here. */
       int option_index = 0;
 
-      c = getopt_long (argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:A:B:C:D:E:F:G:H:I:J:K:L:M:N:O",
+      c = getopt_long (argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X",
                        long_options, &option_index);
 
       /* Detect the end of the options. */
@@ -241,7 +236,7 @@ void init_tr(int argc, char *argv[]) {
       case 'a':
 	//printf("%s\n", optarg);
 	rotate[0] = atof(optarg);
-	//printf("rototion #1 = %lf\n", rotate[0]);
+	//printf("rotation #1 = %lf\n", rotate[0]);
 	break;
       case 'b':
 	xscale[0] = atof(optarg);
@@ -385,6 +380,42 @@ void init_tr(int argc, char *argv[]) {
 	iterations = atoi(optarg);
 	break;
 	
+      case 'P':
+	rotate[5] = atof(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break;
+      case 'Q':
+	xscale[5] = atof(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break;
+      case 'R':
+	yscale[5] = atof(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break; 
+      case 'S':
+	xshift[5] = atof(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break; 
+      case 'T':
+	yshift[5] = atof(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break; 
+      case 'U':
+	palette_red[5] = atoi(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break;
+      case 'V':
+	palette_green[5] = atoi(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break;
+      case 'W':
+	palette_blue[5] = atoi(optarg);
+	transformations = (transformations < 6) ? 6 : transformations;
+	break;
+      case 'X':
+	filename = atoi(optarg);
+	break;
+	
       default:
 	abort ();
       }
@@ -396,19 +427,61 @@ void init_tr(int argc, char *argv[]) {
 int main(int argc, char *argv[])
 {
   init_tr(argc, argv);
+
+
+  FILE *f;
   
+  static char bmp[BMP_SIZE(WIDTH, HEIGHT)];
+  bmp_init(bmp, WIDTH, HEIGHT);
+
   // dry run to find upper and lower bounds on x and y
-  iterateFS(iterations, STARTPOINT, STARTPOINT, FC, FC, FC, CUTOFF_INIT, CUTOFF_INIT, DRY_RUN);
+  iterateFS(iterations, STARTPOINT, STARTPOINT, FC, FC, FC, DRY_RUN);
 
   // based on xmin, ymin, xmax, ymax found in dry run, set other values for conv to bitmap
   set_bitmap_adjustments();
 
   // calculate IFS for real
-  iterateFS(iterations, STARTPOINT, STARTPOINT, FC, FC, FC, CUTOFF_INIT, CUTOFF_INIT, FOR_REAL);
+  iterateFS(iterations, STARTPOINT, STARTPOINT, FC, FC, FC, FOR_REAL);
 
-  // based on bitmap in pixelrgb, print SVG to stdout
-  print_svg();
+  set_pixels(bmp);
+
+  switch (filename) {
+  case 0:
+    f = fopen("ifs0.bmp", "wb");
+    break;
+  case 1:
+    f = fopen("ifs1.bmp", "wb");
+    break;
+  case 2:
+    f = fopen("ifs2.bmp", "wb");
+    break;
+  case 3:
+    f = fopen("ifs3.bmp", "wb");
+    break;
+  case 4:
+    f = fopen("ifs4.bmp", "wb");
+    break;
+  case 5:
+    f = fopen("ifs5.bmp", "wb");
+    break;
+  case 6:
+    f = fopen("ifs6.bmp", "wb");
+    break;
+  case 7:
+    f = fopen("ifs7.bmp", "wb");
+    break;
+  case 8:
+    f = fopen("ifs8.bmp", "wb");
+    break;
+  case 9:
+    f = fopen("ifs9.bmp", "wb");
+    break;
+  default:
+    f = fopen("test.bmp", "wb");
+  }
   
+  fwrite(bmp, sizeof(bmp), 1, f);
+  fclose(f);
 
   return(0);
 }
