@@ -1,29 +1,24 @@
 # ifs
 Render an image of a fractal generated with an iterated function system (IFS).
 
-### System Requirements
-* bash
+### Dependencies
 * gcc 
 * [ImageMagick](http://www.imagemagick.org/script/index.php) (for conversion from SVG)
-* [FFmpeg](https://ffmpeg.org/) (for generating animations)
+* `bmp.h` from [skeeto's BMP library](https://github.com/skeeto/bmp)
+
+If you want to make animations:
+* [FFmpeg](https://ffmpeg.org/) 
+* Python 
 
 ### Quickstart
-Let's make a Sierpinski triangle.
 
-1. `gcc -Wall ./ifs.c -o ifs -lm`
-2. `./ifs --rotate1 0 --xscale1 0.5 --yscale1 0.5 --xshift1 0 --yshift1 0 --red1 255 --green1 0 --blue1 0 --rotate2 0 --xscale2 0.5 --yscale2 0.5 --xshift2 0.5 --yshift2 0 --red2 0 --green2 255 --blue2 0 --rotate3 0 --xscale3 0.5 --yscale3 0.5 --xshift3 0.25 --yshift3 0.5 --red3 0 --green3 0 --blue3 255 --iterations 18 > sierpinski.svg` 
-3. `convert -format png -resize 1400x1400 -normalize -flip sierpinski.svg sierpinski.png`
+1. Get a copy of [skeeto's BMP library](https://github.com/skeeto/bmp) and put `bmp.h` in the same directory as ifs.c
+2. Compile:`gcc -Wall ./ifs.c -o ifs -lm`
+2. Generate a fractal rendered to a bitmap:`./ifs --rotate1 5.811973916078167 --rotate2 0.38627961521895965 --rotate3 5.4352409020747405 --rotate4 3.3014547039291364 --xscale1 0.5803490627378161 --xscale2 0.704957468168029 --xscale3 0.4024125647405239 --xscale4 0.27579071231051877 --yscale1 0.27515513710758005 --yscale2 0.716205801443019 --yscale3 0.5644603992967754 --yscale4 0.5149167446377391 --xshift1 0.43401746776072675 --xshift2 0.7202840952488043 --xshift3 0.253048304131543 --xshift4 0.5036578348369566 --yshift1 0.6782295267680867 --yshift2 0.7457870341404085 --yshift3 0.645867686325276 --yshift4 0.5755495975375138 --red1 178.00000000000003 --red2 13.000000000000004 --red3 108.00000000000003 --red4 117.00000000000001 --green1 149.00000000000003 --green2 237.00000000000003 --green3 14.999999999999993 --green4 89.0 --blue1 249.00000000000006 --blue2 138.00000000000003 --blue3 208.00000000000003 --blue4 230.00000000000003 --iterations 13 --filename 0` 
+3. The bitmap is enormous.  You probably want to convert it into something nicer: `convert -verbose -format png -resize 3840x2160 -normalize -flip ifs0.bmp fractal.png`
+4. You may want to delete the bitmap: `rm ifs0.bmp`
 
-If you don't know what parameters you want to use, you can run `ifs.sh` to generate random parameters and use those to generate fractals in an endless loop.  
+Your new fractal should be fractal.png
 
 ### Parameters
-Rotation is in radians, scale and shift are from 0 to 1, and colors are from 0 to 255.
-
-#### Three functions 
-`ifs --rotate1 --xscale1 --yscale1 --xshift1 --yshift1 --red1 --green1 --blue1 --rotate2 --xscale2 --yscale2 --xshift2 --yshift2 --red2 --green2 --blue2 --rotate3 --xscale3 --yscale3 --xshift3 --yshift3 --red3 --green3 --blue3 --iterations `
-
-#### Four functions 
-`ifs --rotate1 --xscale1 --yscale1 --xshift1 --yshift1 --red1 --green1 --blue1 --rotate2 --xscale2 --yscale2 --xshift2 --yshift2 --red2 --green2 --blue2 --rotate3 --xscale3 --yscale3 --xshift3 --yshift3 --red3 --green3 --blue3 --rotate4 --xscale4 --yscale4 --xshift4 --yshift4 --red4 --green4 --blue4 --iterations `
-
-#### Five functions 
-`ifs --rotate1 --xscale1 --yscale1 --xshift1 --yshift1 --red1 --green1 --blue1 --rotate2 --xscale2 --yscale2 --xshift2 --yshift2 --red2 --green2 --blue2 --rotate3 --xscale3 --yscale3 --xshift3 --yshift3 --red3 --green3 --blue3 --rotate4 --xscale4 --yscale4 --xshift4 --yshift4 --red4 --green4 --blue4 --rotate5 --xscale5 --yscale5 --xshift5 --yshift5 --red5 --green5 --blue5 --iterations `
+Rotation is in radians, scale and shift are from 0 to 1, and colors are from 0 to 255.  This supports from three to six transformations.  See the example above for the format.  Six parameters would include, for example, --rotate1, --rotate2, --rotate3, --rotate4, --rotate5, and --rotate6.
