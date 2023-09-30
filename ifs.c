@@ -35,7 +35,6 @@ static short int green_layer[XRES*YRES] = {0};
 static short int blue_layer[XRES*YRES] = {0};
 static int transformations = 3;
 static int iterations = 12;
-static int filename = 0;
 
 static double width;
 static double height;
@@ -217,15 +216,13 @@ void init_tr(int argc, char *argv[]) {
           {"red6",  required_argument, 0, 'U'},
           {"green6",  required_argument, 0, 'V'},
           {"blue6",  required_argument, 0, 'W'},
-
-	  {"filename", required_argument, 0, 'X'}, 
 	  
           {0, 0, 0, 0}
         };
       /* getopt_long stores the option index here. */
       int option_index = 0;
 
-      c = getopt_long (argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X",
+      c = getopt_long (argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W",
                        long_options, &option_index);
 
       /* Detect the end of the options. */
@@ -412,9 +409,6 @@ void init_tr(int argc, char *argv[]) {
 	palette_blue[5] = atoi(optarg);
 	transformations = (transformations < 6) ? 6 : transformations;
 	break;
-      case 'X':
-	filename = atoi(optarg);
-	break;
 	
       default:
 	abort ();
@@ -427,7 +421,6 @@ void init_tr(int argc, char *argv[]) {
 int main(int argc, char *argv[])
 {
   init_tr(argc, argv);
-
 
   FILE *f;
   
@@ -445,41 +438,7 @@ int main(int argc, char *argv[])
 
   set_pixels(bmp);
 
-  switch (filename) {
-  case 0:
-    f = fopen("ifs0.bmp", "wb");
-    break;
-  case 1:
-    f = fopen("ifs1.bmp", "wb");
-    break;
-  case 2:
-    f = fopen("ifs2.bmp", "wb");
-    break;
-  case 3:
-    f = fopen("ifs3.bmp", "wb");
-    break;
-  case 4:
-    f = fopen("ifs4.bmp", "wb");
-    break;
-  case 5:
-    f = fopen("ifs5.bmp", "wb");
-    break;
-  case 6:
-    f = fopen("ifs6.bmp", "wb");
-    break;
-  case 7:
-    f = fopen("ifs7.bmp", "wb");
-    break;
-  case 8:
-    f = fopen("ifs8.bmp", "wb");
-    break;
-  case 9:
-    f = fopen("ifs9.bmp", "wb");
-    break;
-  default:
-    f = fopen("test.bmp", "wb");
-  }
-  
+  f = fopen("ifs.bmp", "wb");
   fwrite(bmp, sizeof(bmp), 1, f);
   fclose(f);
 
