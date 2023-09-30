@@ -3,7 +3,7 @@ Render an image of a fractal generated with an iterated function system (IFS).
 
 ### Dependencies
 * gcc 
-* [ImageMagick](http://www.imagemagick.org/script/index.php) (for conversion from SVG)
+* [ImageMagick](http://www.imagemagick.org/script/index.php)
 * `bmp.h` from [skeeto's BMP library](https://github.com/skeeto/bmp)
 
 If you want to make animations:
@@ -24,7 +24,15 @@ Your new fractal should be ifs.png
 Rotation is in radians, scale and shift are from 0 to 1, and colors are from 0 to 255.  This supports from three to six transformations.
 
 ### Animation
-You can execute animation.py that will save a shell script in the current directory at render.sh.  
+Fractals with nearly equal parameters will look nearly the same.  If the changes in parameters are short and regular, the fractals appear to morph when combined to create an animation.  Below are instructions for making such an animation.
+
+Execute animation.py to save a shell script in the current directory at render.sh.  Revise the shebang as necessary for your environment.  You can then execute the script `render.sh` to generate animation frames and then combine those frames into an animation file. 
+
+The script `animation.py` randomly generates parameters of several fractals, calculates splines which are interpolated from the sequence of each of those parameters (for example a spline for xscale1, another spline for rotate1, etc.), and generates a series of calls to `ifs` to generate images of fractals at points at regular, short distances along those splines, so that the fractals will appear to transform smoothly when an animation is generated from those images.  The script `render.sh` will make one call at a time to `ifs` to generate each frame one by one, and once all frames have been generated, it will run `ffmpeg` to combine all of the frames into one animation.  
+
+Run the following commands:
 1. `python3 ./animation.py`
 2. `chmod +x ./render.sh`
 3. `./render.sh`
+
+It takes a long time.  You can stop midway and resume later where you left off, because `render.sh` will not generate a frame if it already exists in the local directory.  
