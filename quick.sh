@@ -1,5 +1,6 @@
 #!/bin/zsh
 
+mkdir product
 TIMESTAMP=$(date +%s)
 
 echo "#!/bin/zsh" > "$TIMESTAMP"".sh"
