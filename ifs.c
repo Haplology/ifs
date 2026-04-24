@@ -7,34 +7,36 @@
 #include <getopt.h>
 #include "bmp.h"
 
-// gcc -Wall ~/ifs/ifs.c -o ifs -lm
+// gcc -Wall ifs.c -o ifs -lm
 
 #define STARTPOINT 1000000
-// 3840 * 6
-#define XRES 23040
-// 2160 * 6
-#define YRES 12960
+
+// 6144*2 = 12288
+#define XRES 12288
+#define YRES 12288
+
 #define FOR_REAL 1
 #define DRY_RUN 0
-// FC stands for full color in rgb
-#define FC 255.0
 
-#define WIDTH   23040L
-#define HEIGHT  12960L
+#define WIDTH   12288L
+#define HEIGHT  12288L 
 
 static double rotate[10]; 
 static double xscale[10];
 static double yscale[10]; 
 static double xshift[10]; 
 static double yshift[10]; 
-static int palette_red[10]; 
-static int palette_green[10]; 
-static int palette_blue[10]; 
-static short int red_layer[XRES*YRES] = {0};
-static short int green_layer[XRES*YRES] = {0};
-static short int blue_layer[XRES*YRES] = {0};
+static int palette_red[10] = {0};
+static int palette_green[10] = {0};
+static int palette_blue[10] = {0};
+static short int red_layer[XRES*YRES+1] = {0}; 
+static short int green_layer[XRES*YRES+1] = {0};
+static short int blue_layer[XRES*YRES+1] = {0};
+static short int tile_layer[100] = {0};
 static int transformations = 3;
 static int iterations = 12;
+static int tile = 0;
+static int tilesroot = 3;
 
 static double width;
 static double height;
@@ -51,11 +53,26 @@ static double ymax = -1.0*FLT_MAX;
 
 double xstar(double x, double y, double rotate, double xscale, double xshift);
 double ystar(double x, double y, double rotate, double yscale, double yshift);
+double redstar(double red, int iterations_left, int transformation);
+double greenstar(double green, int iterations_left, int transformation);
+double bluestar(double blue, int iterations_left, int transformation);
 void iterateFS(int iterations_left, double x, double y, double red, double green, double blue, int for_real);
 void adjust_bounds(double x, double y);
 void set_bitmap_adjustments(); 
 void set_pixels(char *bmp);
 void init_tr(int argc, char *argv[]);
+void tilepixel();
+
+void tilepixel() {
+  for (int row = 0; row < tilesroot; row++) {
+    for (int col = 0; col < tilesroot; col++) {
+      if (tile_layer[tilesroot*row+col] == 0) {
+	printf("tile.%04d\n", tilesroot*row+col);
+      }
+    }
+  }
+  return;
+}
 
 double xstar(double x, double y, double rotate, double xscale, double xshift) {
   return ((x*cos(rotate) - y*sin(rotate))*xscale + xshift);
@@ -63,6 +80,30 @@ double xstar(double x, double y, double rotate, double xscale, double xshift) {
 
 double ystar(double x, double y, double rotate, double yscale, double yshift) {
   return ((y*cos(rotate) + x*sin(rotate))*yscale + yshift);
+}
+
+double redstar(double red, int iterations_left, int transformation) {
+  if ( iterations_left == iterations ) {
+    return (float)palette_red[transformation];
+  } else {
+    return ((red + (float)(palette_red[transformation])*0.5));
+  }
+}
+
+double greenstar(double green, int iterations_left, int transformation) {
+  if ( iterations_left == iterations ) {
+    return (float)palette_green[transformation];
+  } else {
+    return ((green + (float)(palette_green[transformation]))*0.5);
+  }
+}
+
+double bluestar(double blue, int iterations_left, int transformation) {
+  if ( iterations_left == iterations ) {
+    return (float)palette_blue[transformation];
+  } else {
+    return ((blue + (float)(palette_blue[transformation]))*0.5);
+  }
 }
 
 void iterateFS(int iterations_left, double x, double y, double red, double green, double blue, int for_real) {
@@ -73,16 +114,22 @@ void iterateFS(int iterations_left, double x, double y, double red, double green
       adjust_bounds(x, y);
     } else {
       // for real, set pixel
-      //printf("x %lf xmin %lf stretch %lf bitmap_xshift %lf\n", x, xmin, stretch, bitmap_xshift);
-      int xpixel = (int)((x-xmin)*stretch + bitmap_xshift);
-      //printf("y %lf ymin %lf stretch %lf bitmap_yshift %lf\n", y, ymin, stretch, bitmap_yshift);
-      int ypixel = (int)((y-ymin)*stretch + bitmap_yshift);
+      int xpixel = 0;
+      int ypixel = 0;
+      xpixel = (int)(((x-xmin) * stretch + bitmap_xshift)*tilesroot) - XRES*(tile%tilesroot);
+      ypixel = (int)(((y-ymin) * stretch + bitmap_yshift)*tilesroot) - YRES*((tile - tile%tilesroot)/tilesroot);
+
+      // like bitmap where one tile is one pixel
+      int tilepixel_xpixel = (int)((x-xmin)*stretch + bitmap_xshift)*((float)tilesroot/(float)XRES);
+      int tilepixel_ypixel = (int)((y-ymin)*stretch + bitmap_yshift)*((float)tilesroot/(float)YRES);
+      tile_layer[tilesroot*tilepixel_ypixel + tilepixel_xpixel] = 1;
+
       if ( xpixel >= 0 && xpixel <= XRES && ypixel >= 0 && ypixel <= YRES ) {
-	red_layer[XRES*ypixel + xpixel] = (int)red;
-	green_layer[XRES*ypixel + xpixel] = (int)green;
-	blue_layer[XRES*ypixel + xpixel] = (int)blue;
-      } else {
-	printf("pixel out of bounds\n");
+	if ( XRES*ypixel + xpixel < XRES*YRES ) { 
+	  red_layer[XRES*ypixel + xpixel] = (int)red;
+	  green_layer[XRES*ypixel + xpixel] = (int)green;
+	  blue_layer[XRES*ypixel + xpixel] = (int)blue;
+	}
       }
     }
   } else {
@@ -92,9 +139,9 @@ void iterateFS(int iterations_left, double x, double y, double red, double green
       iterateFS(iterations_left-1,
 		xstar(x, y, rotate[i], xscale[i], xshift[i]*STARTPOINT),
 		ystar(x, y, rotate[i], yscale[i], yshift[i]*STARTPOINT),
-		(red + palette_red[i])*0.5,
-		(green + palette_green[i])*0.5,
-		(blue + palette_blue[i])*0.5,
+		redstar(red, iterations_left, i),
+		greenstar(green, iterations_left, i),
+		bluestar(blue, iterations_left, i),
 		for_real
 		);
     }
@@ -216,13 +263,15 @@ void init_tr(int argc, char *argv[]) {
           {"red6",  required_argument, 0, 'U'},
           {"green6",  required_argument, 0, 'V'},
           {"blue6",  required_argument, 0, 'W'},
-	  
+	  {"tile", required_argument, 0, 'X'},
+	  {"tilesroot", required_argument, 0, 'Y'},
+
           {0, 0, 0, 0}
         };
       /* getopt_long stores the option index here. */
       int option_index = 0;
 
-      c = getopt_long (argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W",
+      c = getopt_long (argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:A:B:C:D:E:F:G:H:I:J:K:L:M:N:O:P:Q:R:S:T:U:V:W:X:Y",
                        long_options, &option_index);
 
       /* Detect the end of the options. */
@@ -409,7 +458,12 @@ void init_tr(int argc, char *argv[]) {
 	palette_blue[5] = atoi(optarg);
 	transformations = (transformations < 6) ? 6 : transformations;
 	break;
-	
+      case 'X':
+	tile = atoi(optarg);
+	break;
+      case 'Y':
+	tilesroot = atoi(optarg);
+	break;
       default:
 	abort ();
       }
@@ -422,23 +476,26 @@ int main(int argc, char *argv[])
 {
   init_tr(argc, argv);
 
+
   FILE *f;
   
   static char bmp[BMP_SIZE(WIDTH, HEIGHT)];
   bmp_init(bmp, WIDTH, HEIGHT);
 
   // dry run to find upper and lower bounds on x and y
-  iterateFS(iterations, STARTPOINT, STARTPOINT, FC, FC, FC, DRY_RUN);
+  iterateFS(iterations, STARTPOINT, STARTPOINT, 0.0, 0.0, 0.0, DRY_RUN);
 
   // based on xmin, ymin, xmax, ymax found in dry run, set other values for conv to bitmap
   set_bitmap_adjustments();
 
   // calculate IFS for real
-  iterateFS(iterations, STARTPOINT, STARTPOINT, FC, FC, FC, FOR_REAL);
+  iterateFS(iterations, STARTPOINT, STARTPOINT, 0.0, 0.0, 0.0, FOR_REAL);
+
+  tilepixel();
 
   set_pixels(bmp);
-
   f = fopen("ifs.bmp", "wb");
+
   fwrite(bmp, sizeof(bmp), 1, f);
   fclose(f);
 
